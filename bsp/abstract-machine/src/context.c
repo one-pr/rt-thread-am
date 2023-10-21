@@ -65,8 +65,10 @@ rt_uint8_t *rt_hw_stack_init(void *tentry, void *parameter, rt_uint8_t *stack_ad
   g_parameter = parameter;
   g_texit = texit;
 
-  // TODO: 对齐 stack_addr 到 sizeof(uintptr_t)
-  Context *ctx = kcontext(RANGE(0, stack_addr), entry_warp, parameter);
+  // 对齐 stack_addr 到 sizeof(uintptr_t)
+	rt_uint8_t *stack_addr_alig = (rt_uint8_t *)RT_ALIGN_DOWN((uintptr_t)stack_addr, sizeof(uintptr_t));
+
+  Context *ctx = kcontext(RANGE(0, stack_addr_alig), entry_warp, parameter);
 
   return (rt_uint8_t *)ctx;
 } /* rt_hw_stack_init */
