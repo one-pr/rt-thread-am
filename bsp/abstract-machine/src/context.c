@@ -1,5 +1,6 @@
 #include <am.h>
 #include <klib.h>
+#include <klib-macros.h>
 #include <rtthread.h>
 
 
@@ -35,6 +36,22 @@ void rt_hw_context_switch_interrupt(void *context, rt_ubase_t from, rt_ubase_t t
   assert(0);
 }
 
+
+typedef void (*entry_f)(void *);
+typedef void (*exit_f)();
+// [全局变量] entry_warp 的参数
+entry_f g_tentry = NULL;
+exit_f g_texit = NULL;
+void *g_parameter = NULL;
+
+static void entry_warp(void *arg) {
+  assert(NULL != g_tentry);
+  g_tentry(g_parameter);
+
+  assert(NULL != g_texit);
+  g_texit();
+} /* entry_warp */
+
 /**
  * @brief 上下文的创建
  * @param tentry:     上下文 入口
@@ -44,8 +61,12 @@ void rt_hw_context_switch_interrupt(void *context, rt_ubase_t from, rt_ubase_t t
  * @return rt_uint8_t *:  创建完成的上下文
  */
 rt_uint8_t *rt_hw_stack_init(void *tentry, void *parameter, rt_uint8_t *stack_addr, void *texit) {
+  g_tentry = tentry;
+  g_parameter = parameter;
+  g_texit = texit;
+
   // TODO: 对齐 stack_addr 到 sizeof(uintptr_t)
-  // TODO: 支持 texit 的功能
-  assert(0);
-  return NULL;
+  Context *ctx = kcontext(RANGE(0, stack_addr), entry_warp, parameter);
+
+  return (rt_uint8_t *)ctx;
 } /* rt_hw_stack_init */
