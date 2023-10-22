@@ -2,12 +2,15 @@
 #include <klib.h>
 #include <klib-macros.h>
 #include <rtthread.h>
-#ifdef __riscv
-# include "arch/riscv.h"
-#endif
 
+/* NOTE: 目前我们的硬件既未实现中断, 也不支持多处理器. 可以使用全局变量 */
 volatile rt_ubase_t g_from = 0;
 volatile rt_ubase_t g_to = 0;
+
+// struct ctx_switch {
+//   rt_ubase_t from;
+//   rt_ubase_t to;
+// };
 
 
 static Context* ev_handler(Event e, Context *c) {
@@ -53,6 +56,10 @@ void rt_hw_context_switch_to(rt_ubase_t to) {
  * @param to:   切换到的上下文
  */
 void rt_hw_context_switch(rt_ubase_t from, rt_ubase_t to) {
+  // TODO: 使用 tid->user_data 跨函数传递数据, 在 to 的栈上分配空间
+  // rt_thread_t tid = rt_thread_self();
+  // rt_ubase_t user_data_old = tid->user_data;
+
   g_from = from;
   g_to = to;
 
@@ -95,7 +102,7 @@ rt_uint8_t *rt_hw_stack_init(void *tentry, void *parameter, rt_uint8_t *stack_ad
   Context *ctx  = NULL;
   struct entry_arg *arg = NULL;
 
-  // NOTE: 使用栈传递结构体
+  // TODO: 使用栈传递结构体
   arg = (struct entry_arg *)rt_malloc_align(sizeof(struct entry_arg), 4);
   arg->entry = tentry;
   arg->arg = parameter;
