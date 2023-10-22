@@ -63,6 +63,25 @@ void rt_hw_context_switch_interrupt(void *context, rt_ubase_t from, rt_ubase_t t
   assert(0);
 }
 
+
+typedef void (*entry_func_t)(void *);
+typedef void (*exit_func_t)();
+struct entry_arg {
+  entry_func_t entry;
+  exit_func_t exit;
+  void *arg;
+};
+
+// 包装函数处理 exit
+void entry_warp(void *param) {
+  struct entry_arg *arg = (struct entry_arg *)param;
+
+  arg->entry(arg->arg);
+  arg->exit();
+
+  panic("Should not reach here!\n");
+} /* entry_warp */
+
 /**
  * @brief 上下文的创建
  * @param tentry:     上下文 入口
@@ -72,17 +91,21 @@ void rt_hw_context_switch_interrupt(void *context, rt_ubase_t from, rt_ubase_t t
  * @return rt_uint8_t *:  创建完成的上下文
  */
 rt_uint8_t *rt_hw_stack_init(void *tentry, void *parameter, rt_uint8_t *stack_addr, void *texit) {
-  rt_uint8_t *stack_end;
+  rt_uint8_t *stack_end = NULL;
+  Context *ctx  = NULL;
+  struct entry_arg *arg = NULL;
+
+  // NOTE: 使用栈传递结构体
+  arg = (struct entry_arg *)rt_malloc_align(sizeof(struct entry_arg), 4);
+  arg->entry = tentry;
+  arg->arg = parameter;
+  arg->exit = texit;
 
   // 对齐 stack_addr 到 sizeof(uintptr_t)
   stack_end = stack_addr + sizeof(rt_ubase_t);
   stack_end = (rt_uint8_t *)RT_ALIGN_DOWN((uintptr_t)stack_end, (sizeof(uintptr_t)/4U));
 
-  // Context *ctx = kcontext(RANGE(0, stack_end), entry_warp, parameter);
-  Context *ctx = kcontext(RANGE(0, stack_end), tentry, parameter);
-#ifdef __riscv
-  ctx->abi.ra = (uintptr_t)texit;
-#endif
+  ctx = kcontext(RANGE(0, stack_end), entry_warp, (void *)arg);
 
   return (rt_uint8_t *)ctx;
 } /* rt_hw_stack_init */
