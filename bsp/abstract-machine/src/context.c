@@ -2,9 +2,12 @@
 #include <klib.h>
 #include <klib-macros.h>
 #include <rtthread.h>
+#ifdef __riscv
+# include "arch/riscv.h"
+#endif
 
-static rt_ubase_t g_from = 0;
-static rt_ubase_t g_to = 0;
+volatile rt_ubase_t g_from = 0;
+volatile rt_ubase_t g_to = 0;
 
 
 static Context* ev_handler(Event e, Context *c) {
@@ -60,22 +63,6 @@ void rt_hw_context_switch_interrupt(void *context, rt_ubase_t from, rt_ubase_t t
   assert(0);
 }
 
-
-typedef void (*entry_f)(void *);
-typedef void (*exit_f)();
-// [全局变量] entry_warp 的参数
-static entry_f g_tentry = NULL;
-static exit_f g_texit = NULL;
-static void *g_parameter = NULL;
-
-static void entry_warp(void *arg) {
-  assert(NULL != g_tentry);
-  g_tentry(g_parameter); // TODO: 使用 arg?
-
-  assert(NULL != g_texit);
-  g_texit();
-} /* entry_warp */
-
 /**
  * @brief 上下文的创建
  * @param tentry:     上下文 入口
@@ -85,15 +72,17 @@ static void entry_warp(void *arg) {
  * @return rt_uint8_t *:  创建完成的上下文
  */
 rt_uint8_t *rt_hw_stack_init(void *tentry, void *parameter, rt_uint8_t *stack_addr, void *texit) {
-  g_tentry = tentry;
-  g_parameter = parameter;
-  g_texit = texit;
+  rt_uint8_t *stack_end;
 
   // 对齐 stack_addr 到 sizeof(uintptr_t)
-	rt_uint8_t *stack_end = stack_addr;
-  stack_end = (rt_uint8_t *)RT_ALIGN_DOWN((uintptr_t)stack_end, sizeof(uintptr_t));
+  stack_end = stack_addr + sizeof(rt_ubase_t);
+  stack_end = (rt_uint8_t *)RT_ALIGN_DOWN((uintptr_t)stack_end, (sizeof(uintptr_t)/4U));
 
-  Context *ctx = kcontext(RANGE(0, stack_end), entry_warp, parameter);
+  // Context *ctx = kcontext(RANGE(0, stack_end), entry_warp, parameter);
+  Context *ctx = kcontext(RANGE(0, stack_end), tentry, parameter);
+#ifdef __riscv
+  ctx->abi.ra = (uintptr_t)texit;
+#endif
 
   return (rt_uint8_t *)ctx;
 } /* rt_hw_stack_init */
