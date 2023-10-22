@@ -36,17 +36,18 @@
 /*
  * Components Initialization will initialize some driver and components as following
  * order:
- * rti_start         --> 0
- * BOARD_EXPORT      --> 1
- * rti_board_end     --> 1.end
+ * rti_start          --> 0
+ * rti_board_start    --> 0.end
+ *  BOARD_EXPORT      --> 1
+ * rti_board_end      --> 1.end
  *
- * DEVICE_EXPORT     --> 2
- * COMPONENT_EXPORT  --> 3
- * FS_EXPORT         --> 4
- * ENV_EXPORT        --> 5
- * APP_EXPORT        --> 6
- *
- * rti_end           --> 6.end
+ *  PREV_EXPORT       --> 2
+ *  DEVICE_EXPORT     --> 3
+ *  COMPONENT_EXPORT  --> 4
+ *  ENV_EXPORT        --> 5
+ *  APP_EXPORT        --> 6
+ *  FS_EXPORT         --> 6.0
+ * rti_end            --> 6.end
  *
  * These automatically initialization, the driver or component initial function must
  * be defined with:
