@@ -13,9 +13,11 @@ char *strstr(const char *haystack, const char *needle) {
   return rt_strstr(haystack, needle);
 }
 
+#ifndef __riscv
 long strtol(const char *restrict nptr, char **restrict endptr, int base) {
   assert(0);
 }
+#endif // !__riscv
 
 char *strncat(char *restrict dst, const char *restrict src, size_t sz) {
   assert(0);
