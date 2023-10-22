@@ -7,7 +7,7 @@ NAME = rtthread
 SRCS = $(shell find src -name "*.c")
 CFLAGS += -DHAVE_CCONFIG_H -D__RTTHREAD__
 CFLAGS += -Wno-nonnull-compare
-LDFLAGS += -T extra.ld
+LDFLAGS += -Map $(DST_DIR)/rtthread.map  -T extra.ld
 -include $(FILE_MK)
 include $(AM_HOME)/Makefile
 
